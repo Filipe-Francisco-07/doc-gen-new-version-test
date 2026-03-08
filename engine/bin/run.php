@@ -202,7 +202,8 @@ foreach ($items as $it) {
 |----------------------------------------------------------------------
 */
 
-$apiKey = getenv('OPENAI_API_KEY') ?: '';
+$apiKey = $_ENV['OPENAI_API_KEY'] ?? getenv('OPENAI_API_KEY') ?? '';
+echo "API KEY LEN PHP: " . strlen($apiKey) . "\n";
 $model  = getenv('OPENAI_MODEL') ?: 'gpt-4o-mini';
 $baseUrl = rtrim(
     getenv('OPENAI_BASE') ?: 'https://api.openai.com/v1',

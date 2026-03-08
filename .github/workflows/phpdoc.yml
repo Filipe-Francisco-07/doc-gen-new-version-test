@@ -1,0 +1,62 @@
+name: Publish PHP Documentation
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+
+  phpdoc:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Load CI environment
+        run: |
+          if [ -f .env.ci ]; then
+            cat .env.ci >> $GITHUB_ENV
+          fi
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: phpdocumentor, composer
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Generate documentation
+        run: |
+          vendor/bin/phpdocumentor \
+            --target docs \
+            --force \
+            --ignore "vendor/*,tests/*"
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+
+    needs: phpdoc
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

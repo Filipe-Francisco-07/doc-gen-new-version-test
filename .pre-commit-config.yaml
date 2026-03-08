@@ -1,0 +1,51 @@
+repos:
+
+- repo: local
+  hooks:
+
+  - id: php-lint
+    name: PHP lint
+    language: system
+    pass_filenames: true
+    entry: php
+    args: [ -l ]
+
+  - id: phpcs
+    name: PHP_CodeSniffer PSR-12
+    language: system
+    pass_filenames: true
+    entry: vendor/bin/phpcs
+    args:
+      - --standard=phpcs.xml
+
+  - id: php-cs-fixer
+    name: PHP-CS-Fixer
+    language: system
+    pass_filenames: false
+    entry: vendor/bin/php-cs-fixer
+    args:
+      - fix
+      - --allow-risky=yes
+      - --using-cache=no
+
+  - id: phpstan
+    name: PHPStan
+    language: system
+    pass_filenames: false
+    entry: php
+    args:
+      - -d
+      - memory_limit=1G
+      - vendor/bin/phpstan
+      - analyse
+      - src
+      - --level=max
+      - --no-progress
+
+  - id: run-docgen-smoke
+    name: DocGen smoke test
+    language: system
+    pass_filenames: false
+    entry: php
+    args:
+      - bin/run.php

@@ -1,63 +1,21 @@
 <?php
-
 /**
- * Classe responsável por realizar operações matemáticas básicas como soma, subtração, multiplicação e divisão.
+ * Classe responsável por gerar slugs a partir de textos.
  */
-class Calculator
-{
+class __DocGenTemp {
 
     /**
-     * Realiza a soma de dois valores.
+     * Converte uma string em um formato amigável para URLs, substituindo caracteres não alfanuméricos por hífens.
      * 
-     * @param mixed $a O primeiro valor a ser somado.
-     * @param mixed $b O segundo valor a ser somado.
-     * @return mixed O resultado da soma de $a e $b.
+     * @param mixed $text A string a ser convertida.
+     * @return mixed A string formatada para uso em URLs.
      */
-    public function soma($a, $b)
+    public function slugify($text)
     {
-        return $a + $b;
+        $text = strtolower($text);
+        $text = preg_replace('/[^a-z0-9]+/', '-', $text);
+        return trim($text, '-');
     }
 
-    /**
-     * Realiza a subtração entre dois valores.
-     * 
-     * @param mixed $a O primeiro valor a ser subtraído.
-     * @param mixed $b O segundo valor a ser subtraído.
-     * @return mixed O resultado da subtração de $a por $b.
-     */
-    public function subtrai($a, $b)
-    {
-        return $a - $b;
-    }
-
-
-    /**
-     * Realiza a multiplicação de dois valores.
-     * 
-     * @param mixed $a O primeiro valor a ser multiplicado.
-     * @param mixed $b O segundo valor a ser multiplicado.
-     * @return mixed O resultado da multiplicação de $a por $b.
-     */
-    public function multiplica($a, $b)
-    {
-        return $a * $b;
-    }
-
-
-    /**
-     * Realiza a divisão de dois valores, retornando o resultado da multiplicação do primeiro pelo segundo.
-     * 
-     * @param mixed $a O numerador da divisão.
-     * @param mixed $b O denominador da divisão.
-     * @return mixed O resultado da multiplicação de $a por $b.
-     */
-    public function divide($a, $b)
-    {
-        if ($b === 0) {
-            throw new Exception('Divisão por zero');
-        }
-
-        return $a * $b;
-    }
 
 }

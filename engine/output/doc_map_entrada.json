@@ -1,36 +1,19 @@
 [
     {
-        "id": "doc_4",
-        "type": "method",
-        "name": "multiplica",
-        "fqn": "Calculator::multiplica",
+        "id": "doc_1",
+        "type": "class",
+        "name": "__DocGenTemp",
+        "fqn": "__DocGenTemp",
         "doc": null,
         "doc_start": null,
         "doc_end": null,
-        "params": [
-            {
-                "name": "$a",
-                "type": "mixed",
-                "byRef": false,
-                "variadic": false,
-                "default": null,
-                "default_str": null
-            },
-            {
-                "name": "$b",
-                "type": "mixed",
-                "byRef": false,
-                "variadic": false,
-                "default": null,
-                "default_str": null
-            }
-        ],
-        "returnType": "mixed",
-        "line": 34,
-        "endLine": 37,
-        "loc": 4,
+        "params": [],
+        "returnType": null,
+        "line": 2,
+        "endLine": 12,
+        "loc": 11,
         "modificadores": {
-            "public": true,
+            "public": false,
             "protected": false,
             "private": false,
             "static": false,
@@ -38,56 +21,23 @@
             "abstract": false
         },
         "atributos": [],
-        "chamadas": [],
-        "throws": [],
-        "efeitos_colaterais": {
-            "altera_estado": false,
-            "usa_globais": false,
-            "escreve_io": false,
-            "chama_externos": false
+        "heranca": {
+            "extends": null,
+            "implements": []
         },
-        "operadores": [
-            "Mul"
-        ],
-        "operacao_principal": "Mul",
-        "retornos": {
-            "caminhos": 1,
-            "tipos_de_retorno_encontrados": [
-                "Expr_BinaryOp_Mul"
-            ]
-        },
-        "complexidade": {
-            "if": 0,
-            "loops": 0,
-            "catch": 0,
-            "ternary": 0,
-            "match": 0
-        },
-        "checagens": {
-            "divisao_por_zero": false,
-            "null_checks": false,
-            "empty_isset": false
-        }
+        "tipos_uso": []
     },
     {
-        "id": "doc_5",
+        "id": "doc_2",
         "type": "method",
-        "name": "divide",
-        "fqn": "Calculator::divide",
+        "name": "slugify",
+        "fqn": "__DocGenTemp::slugify",
         "doc": null,
         "doc_start": null,
         "doc_end": null,
         "params": [
             {
-                "name": "$a",
-                "type": "mixed",
-                "byRef": false,
-                "variadic": false,
-                "default": null,
-                "default_str": null
-            },
-            {
-                "name": "$b",
+                "name": "$text",
                 "type": "mixed",
                 "byRef": false,
                 "variadic": false,
@@ -96,9 +46,9 @@
             }
         ],
         "returnType": "mixed",
-        "line": 40,
-        "endLine": 47,
-        "loc": 8,
+        "line": 4,
+        "endLine": 9,
+        "loc": 6,
         "modificadores": {
             "public": true,
             "protected": false,
@@ -108,27 +58,28 @@
             "abstract": false
         },
         "atributos": [],
-        "chamadas": [],
+        "chamadas": [
+            "strtolower",
+            "preg_replace",
+            "trim"
+        ],
         "throws": [],
         "efeitos_colaterais": {
             "altera_estado": false,
             "usa_globais": false,
             "escreve_io": false,
-            "chama_externos": false
+            "chama_externos": true
         },
-        "operadores": [
-            "Identical",
-            "Mul"
-        ],
+        "operadores": [],
         "operacao_principal": null,
         "retornos": {
             "caminhos": 1,
             "tipos_de_retorno_encontrados": [
-                "Expr_BinaryOp_Mul"
+                "Expr_FuncCall"
             ]
         },
         "complexidade": {
-            "if": 1,
+            "if": 0,
             "loops": 0,
             "catch": 0,
             "ternary": 0,

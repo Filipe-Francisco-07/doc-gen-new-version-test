@@ -2,9 +2,117 @@ const vscode = require("vscode");
 const fs = require("fs");
 const path = require("path");
 const cp = require("child_process");
+const https = require("https");
+const sodium = require("libsodium-wrappers");
+
 
 const SECRET_KEY = "docgen.openai_api_key";
 const oc = vscode.window.createOutputChannel("DocGen");
+
+
+/**
+ * Extrai owner/repo da URL remota do git
+ */
+async function getRepoInfo(workspace) {
+  const out = await run("git config --get remote.origin.url", workspace);
+  const url = out.trim();
+
+  // suporta https ou ssh
+  const m = url.match(/github\.com[:\/]([^\/]+)\/(.+?)(\.git)?$/);
+  if (!m) throw new Error("Não foi possível detectar owner/repo da URL do GitHub.");
+
+  return { owner: m[1], repo: m[2] };
+}
+
+async function setGithubToken(context) {
+
+  const token = await vscode.window.showInputBox({
+    prompt: "Informe seu GitHub Personal Access Token (repo + actions)",
+    password: true
+  });
+
+  if (!token) return;
+
+  await context.secrets.store("docgen.github_token", token);
+
+  vscode.window.showInformationMessage("GitHub token salvo.");
+}
+
+/**
+ * Faz request HTTP simples
+ */
+function ghRequest(method, path, token, body) {
+  const data = body ? JSON.stringify(body) : null;
+
+  const options = {
+    hostname: "api.github.com",
+    path,
+    method,
+    headers: {
+      "User-Agent": "docgen-extension",
+      "Authorization": `Bearer ${token}`,
+      "Accept": "application/vnd.github+json",
+      "Content-Type": "application/json",
+      "Content-Length": data ? Buffer.byteLength(data) : 0
+    }
+  };
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, res => {
+      let chunks = "";
+      res.on("data", d => chunks += d);
+      res.on("end", () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(chunks ? JSON.parse(chunks) : {});
+        } else {
+          reject(`GitHub API error ${res.statusCode}: ${chunks}`);
+        }
+      });
+    });
+
+    req.on("error", reject);
+    if (data) req.write(data);
+    req.end();
+  });
+}
+
+/**
+ * Cria ou atualiza um GitHub Secret
+ */
+async function setGithubSecret(workspace, githubToken, name, value) {
+
+  const { owner, repo } = await getRepoInfo(workspace);
+
+  // 1. obter public key
+  const keyData = await ghRequest(
+    "GET",
+    `/repos/${owner}/${repo}/actions/secrets/public-key`,
+    githubToken
+  );
+
+  const key = keyData.key;
+  const key_id = keyData.key_id;
+
+  // 2. criptografar secret
+  await sodium.ready;
+
+  const messageBytes = Buffer.from(value);
+  const keyBytes = sodium.from_base64(key, sodium.base64_variants.ORIGINAL);
+
+  const encryptedBytes = sodium.crypto_box_seal(messageBytes, keyBytes);
+  const encrypted = sodium.to_base64(encryptedBytes, sodium.base64_variants.ORIGINAL);
+
+  // 3. enviar secret
+  await ghRequest(
+    "PUT",
+    `/repos/${owner}/${repo}/actions/secrets/${name}`,
+    githubToken,
+    {
+      encrypted_value: encrypted,
+      key_id
+    }
+  );
+}
 
 /* ======================
 CONFIG
@@ -140,25 +248,89 @@ ${fragment}
 function applyIndent(text, indent) {
   return text.split("\n").map(l => indent + l).join("\n");
 }
-
 function expandSelection(editor) {
 
   const doc = editor.document;
+  const total = doc.lineCount;
 
-  let start = editor.selection.start.line;
-  let end = editor.selection.end.line;
+  const startSel = editor.selection.start.line;
+  const endSel = editor.selection.end.line;
 
-  while (start > 0 && !doc.lineAt(start).text.includes("function")) {
-    start--;
+  const isFunction = (text) =>
+    /(public|protected|private|static|\s)*function\s+[a-zA-Z0-9_]+\s*\(/.test(text);
+
+  const isClass = (text) =>
+    /^\s*(class|interface|trait|enum)\s+/.test(text);
+
+  let start = -1;
+
+  // 1️⃣ tentar encontrar função dentro da seleção
+  for (let i = startSel; i <= endSel; i++) {
+    if (isFunction(doc.lineAt(i).text)) {
+      start = i;
+      break;
+    }
   }
 
-  while (end < doc.lineCount && !doc.lineAt(end).text.includes("}")) {
-    end++;
+  // 2️⃣ procurar função acima da seleção
+  if (start === -1) {
+
+    for (let i = startSel; i >= 0; i--) {
+
+      const text = doc.lineAt(i).text;
+
+      if (isFunction(text)) {
+        start = i;
+        break;
+      }
+
+      if (isClass(text)) {
+        start = i;
+        break;
+      }
+
+    }
+
+  }
+
+  // fallback
+  if (start === -1) {
+    return doc.getText(editor.selection);
+  }
+
+  // 3️⃣ encontrar fechamento do bloco
+  let braceCount = 0;
+  let foundOpen = false;
+  let end = start;
+
+  for (let i = start; i < total; i++) {
+
+    const text = doc.lineAt(i).text;
+
+    for (const char of text) {
+
+      if (char === "{") {
+        braceCount++;
+        foundOpen = true;
+      }
+
+      if (char === "}") {
+        braceCount--;
+      }
+
+    }
+
+    if (foundOpen && braceCount === 0) {
+      end = i;
+      break;
+    }
+
   }
 
   return doc.getText(
-    new vscode.Range(start, 0, end, 0)
+    new vscode.Range(start, 0, end + 1, 0)
   );
+
 }
 
 /* ======================
@@ -167,11 +339,21 @@ RUN ENGINE
 
 async function runPhp(context, editor) {
 
+
+
   oc.clear();
   oc.appendLine("[DocGen] Iniciando documentação...");
   oc.show(true);
 
-  const { phpPath, env } = getConfig();
+  const { env } = getConfig();
+
+  const phpPath = path.join(
+  context.extensionPath,
+    "runtime",
+    "php",
+    "win",
+    "php.exe"
+);
 
   const root = context.extensionPath;
   const engineDir = path.join(root, "engine");
@@ -185,14 +367,13 @@ async function runPhp(context, editor) {
   await fs.promises.mkdir(inputDir, { recursive: true });
   await fs.promises.mkdir(outputDir, { recursive: true });
 
-  const selection = editor.selection;
+  let selected;
 
-  if (selection.isEmpty) {
-    vscode.window.showInformationMessage("Selecione um trecho.");
-    return;
+  if (editor.selection.isEmpty) {
+    selected = editor.document.getText();
+  } else {
+    selected = expandSelection(editor);
   }
-
-  const selected = expandSelection(editor);
   const wrapped = sanitizeFragment(selected);
 
   await fs.promises.writeFile(inputFile, wrapped.code, "utf8");
@@ -201,7 +382,11 @@ async function runPhp(context, editor) {
   oc.appendLine(wrapped.code);
   oc.appendLine("---------------------------------");
 
+
+
   const apiKey = await getApiKey(context);
+
+  oc.appendLine("API KEY length: " + (apiKey ? apiKey.length : 0));
 
   const childEnv = {
     ...process.env,
@@ -236,6 +421,8 @@ async function runPhp(context, editor) {
 
   const inserts = [];
 
+  const selectionStart = editor.selection.start.line;
+
   for (const item of map) {
 
     if (item.type === "class" && item.name === "__DocGenTemp") continue;
@@ -243,14 +430,18 @@ async function runPhp(context, editor) {
     const docBlock = docs[item.id];
     if (!docBlock) continue;
 
-    const originalLine = selection.start.line + (item.line - wrapped.offset);
-    const insertLine = Math.max(originalLine - 1, 0);
+    // linha da assinatura no fragmento
+    let targetLine = item.line - wrapped.offset;
 
-    const lineText = editor.document.lineAt(originalLine).text;
-    const indent = lineText.match(/^(\s*)/)?.[0] ?? "";
+    // converter para linha real do arquivo
+    targetLine = selectionStart + targetLine - 1;
+
+    if (targetLine < 0 || targetLine >= editor.document.lineCount) continue;
+
+    const indent = editor.document.lineAt(targetLine).text.match(/^(\s*)/)?.[0] ?? "";
 
     inserts.push({
-      line: insertLine,
+      line: targetLine,
       doc: applyIndent(docBlock, indent)
     });
   }
@@ -289,14 +480,150 @@ function run(cmd, cwd) {
   });
 }
 
+async function ensurePreCommit(workspace) {
+
+  try {
+    await run("pre-commit --version", workspace);
+    oc.appendLine("pre-commit já instalado.");
+  } catch {
+    oc.appendLine("Instalando pre-commit...");
+
+    try {
+      await run("pip install pre-commit", workspace);
+    } catch {
+      try {
+        await run("pip3 install pre-commit", workspace);
+      } catch {
+        oc.appendLine("Falha ao instalar pre-commit automaticamente.");
+        return;
+      }
+    }
+  }
+
+  try {
+    await run("pre-commit install", workspace);
+    oc.appendLine("Hooks do pre-commit instalados.");
+  } catch (err) {
+    oc.appendLine("Erro ao instalar hooks: " + err);
+  }
+}
+
+async function ensureComposerInstall(dir) {
+
+  const composerFile = path.join(dir, "composer.json");
+
+  if (!fs.existsSync(composerFile)) {
+    oc.appendLine("composer.json não encontrado em " + dir);
+    return;
+  }
+
+  try {
+
+    await run("composer --version", dir);
+    oc.appendLine("Composer encontrado.");
+
+  } catch {
+
+    oc.appendLine("Composer não encontrado.");
+    return;
+
+  }
+
+  try {
+
+    oc.appendLine("Executando composer install em " + dir);
+    await run("composer install --no-interaction --no-progress", dir);
+    oc.appendLine("Dependências instaladas.");
+
+  } catch (err) {
+
+    oc.appendLine("Erro no composer install: " + err);
+
+  }
+
+}
+
 async function pushToGit(context) {
 
+  oc.appendLine("Executando pushToGit...");
+  oc.show(true);
+
   const workspace = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+  oc.appendLine("Workspace detectado: " + workspace);
 
   if (!workspace) {
     vscode.window.showErrorMessage("Nenhum projeto aberto.");
     return;
   }
+
+  oc.appendLine("Preparando variáveis...");
+
+  let apiKey;
+  try {
+    apiKey = await getApiKey(context);
+    oc.appendLine("API Key carregada");
+  } catch (e) {
+    oc.appendLine("Erro ao carregar API key: " + e);
+  }
+
+  const { env } = getConfig();
+  oc.appendLine("Config carregada");
+
+  let webhookUrl;
+  try {
+    webhookUrl = vscode.workspace
+      .getConfiguration("phpDocgen")
+      .get("n8nWebhook", "");
+    oc.appendLine("Webhook carregado");
+  } catch (e) {
+    oc.appendLine("Erro webhook: " + e);
+  }
+
+  /* ======================
+     Atualizar GitHub Secret
+  ====================== */
+
+  try {
+
+    const githubToken = await context.secrets.get("docgen.github_token");
+
+    if (!githubToken) {
+      oc.appendLine("GitHub token não configurado.");
+    } else if (apiKey) {
+
+      oc.appendLine("Atualizando secret OPENAI_API_KEY no GitHub...");
+
+      await setGithubSecret(
+        workspace,
+        githubToken,
+        "OPENAI_API_KEY",
+        apiKey
+      );
+
+      oc.appendLine("Secret OPENAI_API_KEY atualizado.");
+
+    }
+
+  } catch (err) {
+
+    oc.appendLine("Erro ao atualizar secret no GitHub: " + err);
+
+  }
+
+  /* ======================
+     Preparar engine
+  ====================== */
+
+  const engineDir = path.join(context.extensionPath, "engine");
+
+  await ensureComposerInstall(engineDir);
+
+  await ensurePreCommit(workspace);
+
+  /* ======================
+     Auto documentar
+  ====================== */
 
   const cfg = vscode.workspace.getConfiguration("phpDocgen");
   const autoDoc = cfg.get("autoDocumentOnCommit", true);
@@ -317,6 +644,10 @@ async function pushToGit(context) {
 
   }
 
+  /* ======================
+     Git commit + push
+  ====================== */
+
   try {
 
     await run("git add .", workspace);
@@ -325,6 +656,11 @@ async function pushToGit(context) {
       prompt: "Mensagem do commit",
       value: "DocGen update"
     });
+
+    if (!message) {
+      oc.appendLine("Commit cancelado.");
+      return;
+    }
 
     await run(`git commit -m "${message}"`, workspace);
 
@@ -337,6 +673,7 @@ async function pushToGit(context) {
     vscode.window.showErrorMessage("Erro ao enviar para Git: " + err);
 
   }
+
 }
 
 async function configurarGit() {
@@ -371,7 +708,11 @@ async function configurarGit() {
 EXTENSION
 ====================== */
 
-function activate(context) {
+async function activate(context) {
+
+  const engineDir = path.join(context.extensionPath, "engine");
+
+  await ensureComposerInstall(engineDir);
 
   context.subscriptions.push(
 
@@ -391,10 +732,8 @@ function activate(context) {
 
       const doc = editor.document;
 
-      editor.selection = new vscode.Selection(
-        new vscode.Position(0, 0),
-        new vscode.Position(doc.lineCount, 0)
-      );
+      const selected = editor.document.getText();
+      const wrapped = sanitizeFragment(selected);
 
       await runPhp(context, editor);
 

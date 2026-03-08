@@ -1,0 +1,76 @@
+name: DocGen CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+
+  build-test-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Load CI environment
+        run: |
+          if [ -f .env.ci ]; then
+            cat .env.ci >> $GITHUB_ENV
+          fi
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress
+
+      - name: PHP Version
+        run: php -v
+
+      - name: Static analysis
+        run: |
+          vendor/bin/phpcs -q || true
+          vendor/bin/phpstan analyse src -l 5 || true
+
+      - name: Run DocGen Engine
+        run: php bin/run.php
+
+      - name: Generate tests
+        run: |
+          if [ -f tools/generate-tests.php ]; then
+            php tools/generate-tests.php
+          fi
+
+      - name: Build phpDocumentor
+        run: |
+          vendor/bin/phpdocumentor \
+            --target docs \
+            --force \
+            --ignore "vendor/*,tests/*"
+
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: phpdocs
+          path: docs
+
+      - name: Notify n8n success
+        if: ${{ success() && env.N8N_WEBHOOK_URL != '' }}
+        run: |
+          curl -X POST "$N8N_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{\"status\":\"success\",\"repo\":\"${{ github.repository }}\",\"sha\":\"${{ github.sha }}\"}"
+
+      - name: Notify n8n fail
+        if: ${{ failure() && env.N8N_WEBHOOK_URL != '' }}
+        run: |
+          curl -X POST "$N8N_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{\"status\":\"fail\",\"repo\":\"${{ github.repository }}\",\"sha\":\"${{ github.sha }}\"}"

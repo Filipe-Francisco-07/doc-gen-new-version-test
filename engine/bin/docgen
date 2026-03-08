@@ -1,0 +1,27 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use DocGen\Runner\RunEngine;
+
+$projectPath = getcwd();
+
+$options = getopt("", [
+    "input::",
+    "output::"
+]);
+
+$input = $options["input"] ?? $projectPath;
+$output = $options["output"] ?? $projectPath . "/docgen-output";
+
+$engine = new RunEngine();
+
+$engine->run([
+    "input" => $input,
+    "output" => $output
+]);
+
+echo "DocGen completed.\n";

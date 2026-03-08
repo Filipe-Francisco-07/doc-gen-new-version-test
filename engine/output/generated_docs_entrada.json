@@ -1,4 +1,0 @@
-{
-    "doc_1": "\/**\n * Classe responsável por gerar slugs a partir de textos.\n *\/",
-    "doc_2": "\/**\n * Converte uma string em um formato amigável para URLs, substituindo caracteres não alfanuméricos por hífens.\n * \n * @param mixed $text A string a ser convertida.\n * @return mixed A string formatada para uso em URLs.\n *\/"
-}

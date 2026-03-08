@@ -543,6 +543,70 @@ async function ensureComposerInstall(dir) {
 
 }
 
+async function ensureWorkflow(workspace, oc) {
+
+  const wfDir = path.join(workspace, ".github", "workflows");
+  const wfFile = path.join(wfDir, "docgen.yml");
+
+  if (fs.existsSync(wfFile)) {
+    oc.appendLine("Workflow já existe.");
+    return;
+  }
+
+  oc.appendLine("Criando workflow do GitHub Actions...");
+
+  await fs.promises.mkdir(wfDir, { recursive: true });
+
+  const workflow = `name: DocGen Pipeline
+
+on:
+  push:
+    branches:
+      - master
+      - main
+
+jobs:
+
+  docgen:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+
+      - name: Install DocGen Engine
+        run: |
+          composer require filipe/docgen-engine --no-interaction || true
+
+      - name: Run DocGen
+        run: vendor/bin/docgen || true
+        env:
+          OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+
+      - name: Generate phpDocumentor
+        run: |
+          composer require phpdocumentor/phpdocumentor --no-interaction || true
+          vendor/bin/phpdocumentor --target docs || true
+
+      - name: Upload docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: docs
+`;
+
+  await fs.promises.writeFile(wfFile, workflow);
+
+  oc.appendLine("Workflow criado com sucesso.");
+}
+
 async function pushToGit(context) {
 
   oc.appendLine("Executando pushToGit...");
@@ -551,6 +615,8 @@ async function pushToGit(context) {
   const workspace = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
   oc.appendLine("Workspace detectado: " + workspace);
+
+  await ensureWorkflow(workspace, oc);
 
   if (!workspace) {
     vscode.window.showErrorMessage("Nenhum projeto aberto.");
@@ -590,7 +656,8 @@ async function pushToGit(context) {
 
     if (!githubToken) {
       oc.appendLine("GitHub token não configurado.");
-    } else if (apiKey) {
+    } 
+    else if (apiKey) {
 
       oc.appendLine("Atualizando secret OPENAI_API_KEY no GitHub...");
 
@@ -642,6 +709,47 @@ async function pushToGit(context) {
 
     }
 
+  }
+
+  const wfDir = path.join(workspace, ".github", "workflows");
+
+  await fs.promises.mkdir(wfDir, { recursive: true });
+
+  const wfFile = path.join(wfDir, "ci.yml");
+
+  if (!fs.existsSync(wfFile)) {
+
+    oc.appendLine("Criando workflow do GitHub Actions...");
+
+    const workflow = `name: DocGen Pipeline
+
+  on:
+    push:
+      branches:
+        - master
+        - main
+
+  jobs:
+
+    docgen:
+
+      runs-on: ubuntu-latest
+
+      steps:
+
+        - uses: actions/checkout@v4
+
+        - uses: shivammathur/setup-php@v2
+          with:
+            php-version: 8.2
+
+        - name: Run DocGen
+          run: php bin/run.php
+          env:
+            OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+  `;
+
+    await fs.promises.writeFile(wfFile, workflow);
   }
 
   /* ======================

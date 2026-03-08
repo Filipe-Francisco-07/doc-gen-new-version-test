@@ -1,0 +1,123 @@
+{
+  "name": "php-docgen-runner",
+  "displayName": "PHP DocGen Runner",
+  "description": "Roda php bin/run.php, injeta input e aplica output/documentado.php no editor.",
+  "version": "0.0.3",
+  "publisher": "you",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:docgen.documentFile",
+    "onCommand:docgen.documentSelection",
+    "onCommand:docgen.pushToGit",
+    "onCommand:docgen.configurarGit",
+    "onCommand:docgen.setGithubToken",
+    "onCommand:docgen.clearGithubToken",
+    "onCommand:docgen.setApiKey",
+    "onCommand:docgen.clearApiKey"
+  ],
+  "main": "./extension.js",
+
+  "contributes": {
+
+    "submenus": [
+      {
+        "id": "docgen.submenu",
+        "label": "DocGen"
+      }
+    ],
+
+    "commands": [
+      {
+        "command": "docgen.documentSelection",
+        "title": "Documentar trecho selecionado"
+      },
+      {
+        "command": "docgen.documentFile",
+        "title": "Documentar arquivo inteiro"
+      },
+      {
+        "command": "docgen.pushToGit",
+        "title": "Enviar projeto para GitHub"
+      },
+      {
+        "command": "docgen.configurarGit",
+        "title": "Configurar Git"
+      },
+      {
+        "command": "docgen.setGithubToken",
+        "title": "Configurar GitHub Token"
+      },
+      {
+        "command": "docgen.clearGithubToken",
+        "title": "Remover GitHub Token"
+      },
+      {
+        "command": "docgen.setApiKey",
+        "title": "Configurar OpenAI API Key"
+      },
+      {
+        "command": "docgen.clearApiKey",
+        "title": "Remover OpenAI API Key"
+      }
+    ],
+
+    "menus": {
+
+      "editor/context": [
+        {
+          "submenu": "docgen.submenu",
+          "group": "navigation@99"
+        }
+      ],
+
+      "docgen.submenu": [
+
+        {
+          "command": "docgen.documentSelection",
+          "group": "1_document",
+          "when": "editorHasSelection"
+        },
+
+        {
+          "command": "docgen.documentFile",
+          "group": "1_document"
+        },
+
+        {
+          "command": "docgen.pushToGit",
+          "group": "2_git"
+        },
+
+        {
+          "command": "docgen.configurarGit",
+          "group": "3_config"
+        },
+
+        {
+          "command": "docgen.setGithubToken",
+          "group": "3_config"
+        },
+
+        {
+          "command": "docgen.clearGithubToken",
+          "group": "3_config"
+        },
+
+        {
+          "command": "docgen.setApiKey",
+          "group": "3_config"
+        },
+
+        {
+          "command": "docgen.clearApiKey",
+          "group": "3_config"
+        }
+      ]
+    }
+  }
+}

@@ -1,43 +1,23 @@
 [
     {
-        "id": "doc_1",
-        "type": "class",
-        "name": "__DocGenTemp",
-        "fqn": "__DocGenTemp",
-        "doc": null,
-        "doc_start": null,
-        "doc_end": null,
-        "params": [],
-        "returnType": null,
-        "line": 2,
-        "endLine": 20,
-        "loc": 19,
-        "modificadores": {
-            "public": false,
-            "protected": false,
-            "private": false,
-            "static": false,
-            "final": false,
-            "abstract": false
-        },
-        "atributos": [],
-        "heranca": {
-            "extends": null,
-            "implements": []
-        },
-        "tipos_uso": []
-    },
-    {
-        "id": "doc_2",
+        "id": "doc_4",
         "type": "method",
-        "name": "slugify",
-        "fqn": "__DocGenTemp::slugify",
+        "name": "multiplica",
+        "fqn": "Calculator::multiplica",
         "doc": null,
         "doc_start": null,
         "doc_end": null,
         "params": [
             {
-                "name": "$text",
+                "name": "$a",
+                "type": "mixed",
+                "byRef": false,
+                "variadic": false,
+                "default": null,
+                "default_str": null
+            },
+            {
+                "name": "$b",
                 "type": "mixed",
                 "byRef": false,
                 "variadic": false,
@@ -46,9 +26,9 @@
             }
         ],
         "returnType": "mixed",
-        "line": 4,
-        "endLine": 9,
-        "loc": 6,
+        "line": 34,
+        "endLine": 37,
+        "loc": 4,
         "modificadores": {
             "public": true,
             "protected": false,
@@ -58,24 +38,22 @@
             "abstract": false
         },
         "atributos": [],
-        "chamadas": [
-            "strtolower",
-            "preg_replace",
-            "trim"
-        ],
+        "chamadas": [],
         "throws": [],
         "efeitos_colaterais": {
             "altera_estado": false,
             "usa_globais": false,
             "escreve_io": false,
-            "chama_externos": true
+            "chama_externos": false
         },
-        "operadores": [],
-        "operacao_principal": null,
+        "operadores": [
+            "Mul"
+        ],
+        "operacao_principal": "Mul",
         "retornos": {
             "caminhos": 1,
             "tipos_de_retorno_encontrados": [
-                "Expr_FuncCall"
+                "Expr_BinaryOp_Mul"
             ]
         },
         "complexidade": {
@@ -92,16 +70,16 @@
         }
     },
     {
-        "id": "doc_3",
+        "id": "doc_5",
         "type": "method",
-        "name": "truncate",
-        "fqn": "__DocGenTemp::truncate",
+        "name": "divide",
+        "fqn": "Calculator::divide",
         "doc": null,
         "doc_start": null,
         "doc_end": null,
         "params": [
             {
-                "name": "$text",
+                "name": "$a",
                 "type": "mixed",
                 "byRef": false,
                 "variadic": false,
@@ -109,7 +87,7 @@
                 "default_str": null
             },
             {
-                "name": "$limit",
+                "name": "$b",
                 "type": "mixed",
                 "byRef": false,
                 "variadic": false,
@@ -118,8 +96,8 @@
             }
         ],
         "returnType": "mixed",
-        "line": 11,
-        "endLine": 18,
+        "line": 40,
+        "endLine": 47,
         "loc": 8,
         "modificadores": {
             "public": true,
@@ -130,10 +108,7 @@
             "abstract": false
         },
         "atributos": [],
-        "chamadas": [
-            "strlen",
-            "substr"
-        ],
+        "chamadas": [],
         "throws": [],
         "efeitos_colaterais": {
             "altera_estado": false,
@@ -142,15 +117,14 @@
             "chama_externos": false
         },
         "operadores": [
-            "SmallerOrEqual",
-            "Concat"
+            "Identical",
+            "Mul"
         ],
         "operacao_principal": null,
         "retornos": {
-            "caminhos": 2,
+            "caminhos": 1,
             "tipos_de_retorno_encontrados": [
-                "Expr_Variable",
-                "Expr_BinaryOp_Concat"
+                "Expr_BinaryOp_Mul"
             ]
         },
         "complexidade": {

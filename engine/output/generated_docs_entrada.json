@@ -1,5 +1,4 @@
 {
-    "doc_1": "\/**\n * Classe responsável por manipulações de strings, como geração de slugs e truncamento de texto.\n *\/",
-    "doc_2": "\/**\n * Converte uma string em um formato \"slug\", substituindo caracteres não alfanuméricos por hífens e convertendo para minúsculas.\n * \n * @param mixed $text A string a ser convertida em slug.\n * @return mixed A string formatada como slug.\n *\/",
-    "doc_3": "\/**\n * Trunca uma string para um limite especificado e adiciona reticências se necessário.\n * \n * @param mixed $text A string a ser truncada.\n * @param mixed $limit O limite de caracteres para a truncagem.\n * @return mixed A string truncada ou a original se não exceder o limite.\n *\/"
+    "doc_4": "\/**\n * Realiza a multiplicação de dois valores.\n * \n * @param mixed $a O primeiro valor a ser multiplicado.\n * @param mixed $b O segundo valor a ser multiplicado.\n * @return mixed O resultado da multiplicação de $a por $b.\n *\/",
+    "doc_5": "\/**\n * Realiza a divisão de dois valores, retornando o resultado da multiplicação do primeiro pelo segundo.\n * \n * @param mixed $a O numerador da divisão.\n * @param mixed $b O denominador da divisão.\n * @return mixed O resultado da multiplicação de $a por $b.\n *\/"
 }

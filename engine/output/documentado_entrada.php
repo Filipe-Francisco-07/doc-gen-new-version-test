@@ -1,36 +1,63 @@
 <?php
+
 /**
- * Classe responsável por manipulações de strings, como geração de slugs e truncamento de texto.
+ * Classe responsável por realizar operações matemáticas básicas como soma, subtração, multiplicação e divisão.
  */
-class __DocGenTemp {
+class Calculator
+{
 
     /**
-     * Converte uma string em um formato "slug", substituindo caracteres não alfanuméricos por hífens e convertendo para minúsculas.
+     * Realiza a soma de dois valores.
      * 
-     * @param mixed $text A string a ser convertida em slug.
-     * @return mixed A string formatada como slug.
+     * @param mixed $a O primeiro valor a ser somado.
+     * @param mixed $b O segundo valor a ser somado.
+     * @return mixed O resultado da soma de $a e $b.
      */
-    public function slugify($text)
+    public function soma($a, $b)
     {
-        $text = strtolower($text);
-        $text = preg_replace('/[^a-z0-9]+/', '-', $text);
-        return trim($text, '-');
+        return $a + $b;
     }
 
     /**
-     * Trunca uma string para um limite especificado e adiciona reticências se necessário.
+     * Realiza a subtração entre dois valores.
      * 
-     * @param mixed $text A string a ser truncada.
-     * @param mixed $limit O limite de caracteres para a truncagem.
-     * @return mixed A string truncada ou a original se não exceder o limite.
+     * @param mixed $a O primeiro valor a ser subtraído.
+     * @param mixed $b O segundo valor a ser subtraído.
+     * @return mixed O resultado da subtração de $a por $b.
      */
-    public function truncate($text, $limit)
+    public function subtrai($a, $b)
     {
-        if (strlen($text) <= $limit) {
-            return $text;
+        return $a - $b;
+    }
+
+
+    /**
+     * Realiza a multiplicação de dois valores.
+     * 
+     * @param mixed $a O primeiro valor a ser multiplicado.
+     * @param mixed $b O segundo valor a ser multiplicado.
+     * @return mixed O resultado da multiplicação de $a por $b.
+     */
+    public function multiplica($a, $b)
+    {
+        return $a * $b;
+    }
+
+
+    /**
+     * Realiza a divisão de dois valores, retornando o resultado da multiplicação do primeiro pelo segundo.
+     * 
+     * @param mixed $a O numerador da divisão.
+     * @param mixed $b O denominador da divisão.
+     * @return mixed O resultado da multiplicação de $a por $b.
+     */
+    public function divide($a, $b)
+    {
+        if ($b === 0) {
+            throw new Exception('Divisão por zero');
         }
 
-        return substr($text, 0, $limit) . "...";
+        return $a * $b;
     }
 
 }

@@ -8,6 +8,7 @@ use App\Parser\Normalizador;
 use App\Parser\ServicoAst;
 use PhpParser\NodeTraverser;
 use Analyser\MarcadorDocumentacao;
+use Analyser\ValidadorDocblock;
 use Util\InjetorPlaceholder;
 use Util\RelatorErros;
 use Generator\ConstrutorPrompt;
@@ -117,6 +118,14 @@ $items = array_map(function ($it) use ($addedLines) {
     return $it;
 
 }, $marker->aItens ?? []);
+
+$validator = new ValidadorDocblock();
+
+$items = array_values(array_filter(
+    $items,
+    fn($it) => $validator->precisaGerar($it)
+));
+
 
 /*
 |----------------------------------------------------------------------

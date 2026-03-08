@@ -118,6 +118,16 @@
           "group": "3_config"
         }
       ]
+    },
+    "configuration": {
+      "title": "PHP DocGen",
+      "properties": {
+        "phpDocgen.autoDocumentOnCommit": {
+          "type": "boolean",
+          "default": true,
+          "description": "Documentar automaticamente métodos não documentados ao realizar commit."
+        }
+      }
     }
   }
 }
